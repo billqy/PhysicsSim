@@ -15,7 +15,7 @@ path_max_lifetime = 180  # 120 frames represents 2 seconds passed @60FPS.
 XMAX = 800
 YMAX = 700
 SCALE = XMAX / 100
-BORDER_ELASTICITY = 1.5
+BORDER_ELASTICITY = 0.9
 
 pygame.init()
 screen = pygame.display.set_mode((XMAX, YMAX))
@@ -27,44 +27,54 @@ dt = 0
 
 
 class Body:
-    def __init__(self, xpos, ypos, radius, color, mass, velo):
+    def __init__(self, xpos, ypos, radius, color, mass, xvelo, yvelo):
         self.xpos = xpos
         self.ypos = ypos
-        self.radius = radius
+        self.radius = radius * SCALE
         self.color = color
 
         self.mass = mass
-        self.velo = velo
+        self.xvelo = xvelo
+        self.yvelo = yvelo
 
         self.path_frame_count = 0
-    #
-    # def collision_check(self):
-    #     for other in BODIES:
-    #         if other != self:
-    #             if abs(other.xpos - self.xpos) < 0.1 * SCALE and abs(other.ypos - self.ypos) < 0.1 * SCALE:
-    #                 momentum = self.mass *
+
+    def collision_check(self):
+        for other in BODIES:
+            if other != self:
+                xdist = abs(other.xpos - self.xpos)
+                ydist = abs(other.ypos - self.ypos)
+                distance = math.sqrt(pow(xdist, 2) + pow(ydist, 2))
+
+                if (other.radius + self.radius) >= distance:
+                    self.collision_handle()
+
+    def collision_handle(self):
+        print("Collision detected!")
 
     def update_values(self):
         self.path_frame_count += 1
 
-        self.velo[1] += GRAVITY * SCALE * dt
+        self.yvelo += GRAVITY * SCALE * dt
 
-        self.xpos += self.velo[0] * SCALE * dt
-        self.ypos += self.velo[1] * SCALE * dt
+        self.xpos += self.xvelo * SCALE * dt
+        self.ypos += self.yvelo * SCALE * dt
 
         if self.ypos <= 0:
             self.ypos = 0
-            self.velo[1] = -self.velo[1] * BORDER_ELASTICITY
+            self.yvelo = -self.yvelo * BORDER_ELASTICITY
         elif self.ypos >= YMAX:
             self.ypos = YMAX
-            self.velo[1] = -self.velo[1] * BORDER_ELASTICITY
+            self.yvelo = -self.yvelo * BORDER_ELASTICITY
 
         if self.xpos <= 0:
             self.xpos = 0
-            self.velo[0] = -self.velo[0] * BORDER_ELASTICITY
+            self.xvelo = -self.xvelo * BORDER_ELASTICITY
         elif self.xpos >= XMAX:
             self.xpos = XMAX
-            self.velo[0] = -self.velo[0] * BORDER_ELASTICITY
+            self.xvelo = -self.xvelo * BORDER_ELASTICITY
+
+        self.collision_check()
 
     def reset_path_count(self):
         self.path_frame_count = 0
@@ -85,8 +95,10 @@ class Path:
         return new_color
 
 
-Test = Body(XMAX / 2, YMAX / 2, 1 * SCALE, "aliceblue", 5, [50, 0])
-BODIES.append(Test)
+Test1 = Body(XMAX / 2, YMAX / 2, 1, "aliceblue", 5, 50, 0)
+Test2 = Body(100, 100, 1, "aliceblue", 5, 50, 0)
+BODIES.append(Test1)
+BODIES.append(Test2)
 
 while running:
     # -- user events --
