@@ -1,6 +1,6 @@
 import pygame
 import math
-import random
+import numpy as np
 from scipy.interpolate import interp1d
 from win32gui import SetWindowPos
 
@@ -47,10 +47,30 @@ class Body:
                 distance = math.sqrt(pow(xdist, 2) + pow(ydist, 2))
 
                 if (other.radius + self.radius) >= distance:
-                    self.collision_handle()
+                    self.collision_handle(other, distance)
 
-    def collision_handle(self):
-        print("Collision detected!")
+    def collision_handle(self, other, d):
+        # u1 = v1 - 2 * m2 / M * np.dot(v1 - v2, r1 - r2) / d * (r1 - r2)
+        # u2 = v2 - 2 * m1 / M * np.dot(v2 - v1, r2 - r1) / d * (r2 - r1)
+
+        vx1, vx2 = self.xvelo, other.xvelo
+        vy1, vy2 = self.yvelo, other.yvelo
+        px1, px2 = self.xpos, other.xpos
+        py1, py2 = self.ypos, other.ypos
+        M = self.mass + other.mass
+        dx = np.linalg.norm(px1 - px2)**2
+        dy = np.linalg.norm(py1 - py2)**2
+
+        if dx == 0:
+            dx += 0.00000001
+        if dy == 0:
+            dy += 0.00000001
+
+        self.xvelo = vx1 - 2 * other.mass / M * np.dot(vx1 - vx2, px1 - px2) / dx * (px1 - px2)
+        other.xvelo = vx2 - 2 * self.mass / M * np.dot(vx2 - vx1, px2 - px1) / dx * (px2 - px1)
+
+        self.yvelo = vy1 - 2 * other.mass / M * np.dot(vy1 - vy2, py1 - py2) / dy * (py1 - py2)
+        other.yvelo = vy2 - 2 * self.mass / M * np.dot(vy2 - vy1, py2 - py1) / dy * (py2 - py1)
 
     def update_values(self):
         self.path_frame_count += 1
@@ -95,10 +115,16 @@ class Path:
         return new_color
 
 
-Test1 = Body(XMAX / 2, YMAX / 2, 1, "aliceblue", 5, 50, 0)
-Test2 = Body(100, 100, 1, "aliceblue", 5, 50, 0)
+Test1 = Body(100, 300, 1, "aliceblue", 5, 10, 5)
+Test2 = Body(400, 400, 1.5, "aliceblue", 50, 50, 0)
+Test3 = Body(XMAX/2, YMAX/2, 1.25, "aliceblue", 25, -10, 50)
+Test4 = Body(600, 750, 1.1, "aliceblue", 10, -30, -10)
+Test5 = Body(300, 600, 1, "aliceblue", 5, 100, -30)
 BODIES.append(Test1)
 BODIES.append(Test2)
+BODIES.append(Test3)
+BODIES.append(Test4)
+BODIES.append(Test5)
 
 while running:
     # -- user events --
